@@ -22,26 +22,75 @@ void yyerror (char const *mensagem);
 
 %%
 
-programa:       lista_funcoes | ;
+program: function_list
+       | /* empty */
+       ;
 
-lista_funcoes:  funcao | funcao lista_funcoes;
+command: variable_declaration
+       | TK_IDENTIFICADOR '=' expression        /* Assignment */
+       | TK_IDENTIFICADOR '(' opt_argument ')'  /* Function call */
+       | TK_PR_RETURN expression
+       | TK_PR_WHILE command_block
+       | selection_command
+       ;
+       
+command_list: command command_list
+            | /* empty */
+            ;
 
-funcao:         cabecalho corpo;
+command_block: '[' command_list ']';
 
-cabecalho:      nome '=' opt_param '>' tipo;
+selection_command: TK_PR_IF '(' expression ')' command_block TK_PR_ELSE command_block
+                 | TK_PR_IF '(' expression ')' command_block
+                 ;
 
-opt_param:      lista_param | ;
+variable_declaration: type identifier_list 
+                    | type identifier_list TK_OC_LE literal
+                    ;
 
-lista_param:    param | param '|' lista_param;
+/* TODO: check if left recursion is OK; */
+identifier_list: TK_IDENTIFICADOR
+               | identifier_list ',' TK_IDENTIFICADOR
+               ;
 
-corpo:          bloco_comando
+opt_argument: argument_list
+            | /* empty */
+            ;
 
-bloco_comando:  '[' lista_comandos ']'
+argument_list: argument ',' argument_list
+             | argument
+             ;
 
-lista_comandos: comando | comando ';' lista_comandos 
+/* TODO: WHAT IS AN ARGUMENT; */
+argument: expression;
 
-param: 
+expression: literal
+          | TK_IDENTIFICADOR                    /* Identifier    */
+          | TK_IDENTIFICADOR '(' expression ')' /* Function call */
+          | expression '+' expression
+          | expression '-' expression
+          | expression '*' expression
+          | expression '/' expression
+          | expression '%' expression
+          | expression '<' expression
+          | expression '>' expression
+          | expression TK_OC_LE expression
+          | expression TK_OC_GE expression
+          | expression TK_OC_EQ expression
+          | expression TK_OC_NE expression
+          | expression TK_OC_AND expression
+          | '-' expression
+          | '!' expression
+          | '(' expression ')'
+          ;
 
+literal: TK_LIT_INT
+       | TK_LIT_FLOAT
+       ; 
+
+type: TK_PR_INT
+    | TK_PR_FLOAT
+    ;
 
 %%
 
