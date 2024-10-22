@@ -1,4 +1,5 @@
 %{
+#include <stdio.h>
 int yylex(void);
 void yyerror (char const *mensagem);
 %}
@@ -33,6 +34,7 @@ function: TK_IDENTIFICADOR '=' param_list '>' type command_block;
 
 /* TODO: currently wrong example: " | param" */
 /* A parameters list is composed of zero or more parameters separeted by TK_OC_OR */
+/* TODO: check this out*/
 param_list: param_list TK_OC_OR param 
           | /* empty */
           ;
