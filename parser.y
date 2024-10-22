@@ -22,41 +22,61 @@ void yyerror (char const *mensagem);
 
 %%
 
-program: function_list
-       | /* empty */
-       ;
+/* A program is composed of a optional list of functions*/
+program: function_list;
+
+function_list: function_list function
+             | /* empty */ 
+             ;
+
+function: TK_IDENTIFICADOR '=' param_list '>' type command_block;
+
+/* TODO: currently wrong example: " | param" */
+/* A parameters list is composed of zero or more parameters separeted by TK_OC_OR */
+param_list: param_list TK_OC_OR param 
+          | /* empty */
+          ;
+
+/* Parameters are defined by the name followed by <- and their type */
+param: TK_IDENTIFICADOR '<' '-' type;
+
 
 command: variable_declaration
        | TK_IDENTIFICADOR '=' expression        /* Assignment */
        | TK_IDENTIFICADOR '(' opt_argument ')'  /* Function call */
-       | TK_PR_RETURN expression
+       | TK_PR_RETURN expression                /* Return expression */
        | TK_PR_WHILE command_block
-       | selection_command
+       | selection_command                      /* Conditional expressions */
        ;
        
-command_list: command command_list
+/* TODO: right recursion maybe not accepted*/
+command_list: command ';' command_list
             | /* empty */
             ;
 
-command_block: '[' command_list ']';
+command_block: '{' command_list '}';
 
+/* The selection command IF is followed by an optional ELSE */
 selection_command: TK_PR_IF '(' expression ')' command_block TK_PR_ELSE command_block
                  | TK_PR_IF '(' expression ')' command_block
                  ;
 
+/* It's possible to declare multiple variables at a time
+ * a variable can be optionaly initialized if followed by TK_OC_LE and a literal */
 variable_declaration: type identifier_list 
                     | type identifier_list TK_OC_LE literal
                     ;
 
-/* TODO: check if left recursion is OK; */
 identifier_list: TK_IDENTIFICADOR
                | identifier_list ',' TK_IDENTIFICADOR
                ;
 
+/* Optional arguments passed in a function call */
 opt_argument: argument_list
             | /* empty */
             ;
 
+/* TODO: right recursion */
 argument_list: argument ',' argument_list
              | argument
              ;
@@ -64,6 +84,7 @@ argument_list: argument ',' argument_list
 /* TODO: WHAT IS AN ARGUMENT; */
 argument: expression;
 
+/* TODO: check for precedencia */
 expression: literal
           | TK_IDENTIFICADOR                    /* Identifier    */
           | TK_IDENTIFICADOR '(' expression ')' /* Function call */
