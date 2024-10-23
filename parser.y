@@ -27,14 +27,16 @@
 %%
 
 /* A program is composed of an optional list of functions*/
-program: functionList;
+program: functionList
+       | /* empty */
+       ;
 
 functionList: functionList function
-            | /* empty */
+            | function
             ;
 
 function: TK_IDENTIFICADOR '=' nonEmptyParamList '>' type commandBlock;
-        | TK_IDENTIFICADOR '>' type commandBlock;
+        | TK_IDENTIFICADOR '=' '>' type commandBlock;
 
 nonEmptyParamList: TK_IDENTIFICADOR '<' '-' type
                  | nonEmptyParamList TK_OC_OR TK_IDENTIFICADOR '<' '-' type
@@ -50,9 +52,9 @@ commandList: commandList command ';'
 
 command: commandBlock
        | varDeclaration
-       | selectionCommand                               /* Conditional expressions */       
+       | selectionCommand                               /* Conditional expressions */
+       | functionCall                                   /* Function call */       
        | TK_IDENTIFICADOR '=' expression                /* Assignment */
-       | TK_IDENTIFICADOR '(' optionalArguments ')'     /* Function call */
        | TK_PR_RETURN expression                        /* Return expression */
        | TK_PR_WHILE '(' expression ')' commandBlock
        ;
@@ -63,12 +65,14 @@ varDeclaration: type TK_IDENTIFICADOR
               | type TK_IDENTIFICADOR TK_OC_LE literal
               | type TK_IDENTIFICADOR ',' varDeclaration
               | type TK_IDENTIFICADOR TK_OC_LE literal ',' varDeclaration
-              ;
+              ;      
 
 /* The selection command IF is followed by an optional ELSE */
 selectionCommand: TK_PR_IF '(' expression ')' commandBlock TK_PR_ELSE commandBlock
                 | TK_PR_IF '(' expression ')' commandBlock
                 ;
+
+functionCall: TK_IDENTIFICADOR '(' optionalArguments ')';
 
 /* Optional arguments passed in a function call */
 optionalArguments: argumentList
@@ -80,24 +84,32 @@ argumentList: argumentList ',' expression
             ;
 
 /* TODO: Check for precedencia */
-expression: expression TK_OC_OR expression
-          | expression TK_OC_AND expression
-          | expression TK_OC_NE expression
-          | expression TK_OC_EQ expression
-          | expression TK_OC_GE expression
-          | expression TK_OC_LE expression
-          | expression '>' expression
-          | expression '<' expression
-          | expression '-' expression
-          | expression '+' expression
-          | expression '*' expression
-          | expression '/' expression
-          | expression '%' expression
-          | '-' expression
-          | '!' expression
-          | '(' expression ')'
-          | TK_IDENTIFICADOR
-          | literal
+expression: expression TK_OC_OR term
+          | expression TK_OC_AND term
+          | expression TK_OC_NE term
+          | expression TK_OC_EQ term
+          | expression TK_OC_GE term
+          | expression TK_OC_LE term
+          | expression '>' term
+          | expression '<' term
+          | expression '-' term
+          | expression '+' term
+          | term
+          ;
+
+term: term '%' factor
+    | term '*' factor
+    | term '/' factor
+    | factor
+    ;
+
+factor: '!' factor
+      | '-' factor
+      | '(' expression ')'
+      | TK_IDENTIFICADOR
+      | functionCall
+      | literal
+      ;
 
 literal: TK_LIT_INT
        | TK_LIT_FLOAT
