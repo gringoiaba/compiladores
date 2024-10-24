@@ -83,19 +83,30 @@ argumentList: argumentList ',' expression
             | expression
             ;
 
-/* TODO: Check for precedencia */
-expression: expression TK_OC_OR term
-          | expression TK_OC_AND term
-          | expression TK_OC_NE term
-          | expression TK_OC_EQ term
-          | expression TK_OC_GE term
-          | expression TK_OC_LE term
-          | expression '>' term
-          | expression '<' term
-          | expression '-' term
-          | expression '+' term
-          | term
+expression: expression TK_OC_OR expression1
+          | expression1
           ;
+
+expression1: expression1 TK_OC_AND expression2
+           | expression2
+           ;
+
+expression2: expression2 TK_OC_NE expression3
+           | expression2 TK_OC_EQ expression3
+           | expression3
+           ;
+
+expression3: expression3 TK_OC_GE expression4
+           | expression3 TK_OC_LE expression4
+           | expression3 '>' expression4
+           | expression3 '<' expression4
+           | expression4
+           ;
+
+expression4: expression4 '+' term
+           | expression4 '-' term
+           | term
+           ;
 
 term: term '%' factor
     | term '*' factor
@@ -103,13 +114,15 @@ term: term '%' factor
     | factor
     ;
 
-factor: '!' factor
-      | '-' factor
-      | '(' expression ')'
-      | TK_IDENTIFICADOR
-      | functionCall
-      | literal
+factor: '!' operand
+      | '-' operand
       ;
+
+operand: '(' expression ')'
+       | TK_IDENTIFICADOR
+       | functionCall
+       | literal
+       ;
 
 literal: TK_LIT_INT
        | TK_LIT_FLOAT
