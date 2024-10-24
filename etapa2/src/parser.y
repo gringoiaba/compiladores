@@ -59,13 +59,15 @@ command: commandBlock
        | TK_PR_WHILE '(' expression ')' commandBlock
        ;
        
+varDeclaration: type idList
+
 /* It is possible to declare multiple variables at a time
  * a variable can be optionaly initialized if followed by TK_OC_LE and a literal */
-varDeclaration: type TK_IDENTIFICADOR
-              | type TK_IDENTIFICADOR TK_OC_LE literal
-              | type TK_IDENTIFICADOR ',' varDeclaration
-              | type TK_IDENTIFICADOR TK_OC_LE literal ',' varDeclaration
-              ;      
+idList: TK_IDENTIFICADOR
+      | TK_IDENTIFICADOR ',' idList
+      | TK_IDENTIFICADOR TK_OC_LE literal
+      | TK_IDENTIFICADOR TK_OC_LE literal ',' idList
+      ;      
 
 /* The selection command IF is followed by an optional ELSE */
 selectionCommand: TK_PR_IF '(' expression ')' commandBlock TK_PR_ELSE commandBlock
