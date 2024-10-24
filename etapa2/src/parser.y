@@ -115,6 +115,7 @@ term: term '%' factor
 
 factor: '!' operand
       | '-' operand
+      | operand
       ;
 
 operand: '(' expression ')'
