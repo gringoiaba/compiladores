@@ -74,14 +74,9 @@ selectionCommand: TK_PR_IF '(' expression ')' commandBlock TK_PR_ELSE commandBlo
                 | TK_PR_IF '(' expression ')' commandBlock
                 ;
 
-functionCall: TK_IDENTIFICADOR '(' optionalArguments ')';
+functionCall: TK_IDENTIFICADOR '(' argumentsList ')';
 
-/* Optional arguments passed in a function call */
-optionalArguments: argumentList
-                 | /* empty */
-                 ;
-
-argumentList: argumentList ',' expression
+argumentsList: argumentsList ',' expression
             | expression
             ;
 
