@@ -53,7 +53,7 @@ commandList: commandList command ';'
 command: commandBlock
        | varDeclaration
        | selectionCommand                               /* Conditional expressions */
-       | functionCall                                   /* Function call */       
+       | functionCall     
        | TK_IDENTIFICADOR '=' expression                /* Assignment */
        | TK_PR_RETURN expression                        /* Return expression */
        | TK_PR_WHILE '(' expression ')' commandBlock
@@ -61,13 +61,15 @@ command: commandBlock
        
 varDeclaration: type idList
 
-/* It is possible to declare multiple variables at a time
- * a variable can be optionaly initialized if followed by TK_OC_LE and a literal */
-idList: TK_IDENTIFICADOR
-      | TK_IDENTIFICADOR ',' idList
-      | TK_IDENTIFICADOR TK_OC_LE literal
-      | TK_IDENTIFICADOR TK_OC_LE literal ',' idList
-      ;      
+/* It is possible to declare multiple variables at a time */ 
+idList: id 
+      | idList ',' id
+      ;
+
+/* A variable can be optionaly initialized if followed by TK_OC_LE '<=' and a literal */
+id: TK_IDENTIFICADOR
+  | TK_IDENTIFICADOR TK_OC_LE literal
+  ;
 
 /* The selection command IF is followed by an optional ELSE */
 selectionCommand: TK_PR_IF '(' expression ')' commandBlock TK_PR_ELSE commandBlock
