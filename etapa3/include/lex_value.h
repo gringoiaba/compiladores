@@ -12,4 +12,10 @@ enum TokenType {
     LITERAL
 };
 
+LexValue newLexValue(int lineno, TokenType type, char *value)
+{
+    LexValue lv = {lineno, type, value};
+    return lv;
+}
+
 #endif
