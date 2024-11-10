@@ -5,13 +5,13 @@ CC=gcc
 CFLAGS=-I$(IDIR)
 LFLAGS=-lfl
 
-_DEPS = parser.tab.h
+_DEPS = parser.tab.h ast.h lex_value.h
 DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
 
-_OBJ = main.o lex.yy.o parser.tab.o
+_OBJ = main.o lex.yy.o parser.tab.o ast.o lex_value.o
 OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
-etapa2: $(OBJ)
+etapa3: $(OBJ)
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS)
 
 $(IDIR)/parser.tab.h: $(SDIR)/parser.y
@@ -31,4 +31,4 @@ $(ODIR)/%.o: $(SDIR)/%.c $(DEPS)
 .PHONY: clean
 
 clean:
-	rm -fr $(ODIR) *~ core $(INCDIR)/*~ etapa2 $(SDIR)/lex.yy.c $(SDIR)/parser.tab.c $(IDIR)/parser.tab.h $(SDIR)/parser.output
+	rm -fr $(ODIR) *~ core $(INCDIR)/*~ etapa3 $(SDIR)/lex.yy.c $(SDIR)/parser.tab.c $(IDIR)/parser.tab.h $(SDIR)/parser.output
