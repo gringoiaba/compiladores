@@ -5,6 +5,8 @@
 
 #define OUTPUT_FILE "output.dot"
 
+/* AST FUNCTIONS ADAPTED FROM TUTORIAL */ 
+
 Node *newNode(char *label) 
 {
     Node *t = NULL;
@@ -64,6 +66,9 @@ static void printNode(Node *root)
     }
 }
 
+/* Exports a tree to a .dot file 
+ * It can be used to visualize the tree using Graphviz 
+ */
 static void _printNodeGraphviz(FILE *foutput, Node *root) 
 {
     if (root != NULL) {
@@ -100,12 +105,14 @@ void exporta(void *arvore)
     }
 
     Node *root = (Node *)arvore;
-        fprintf(stdout, "%p [label=\"%s\"]; \n", root, root->label);
+        fprintf(stdout, "%p [label=\"%s\"];\n", root, root->label);
 
-    int i = 0;
-    for (i = 0; i < root->numChildren; i++) {
+    for (int i = 0; i < root->numChildren; i++) {
         exporta(root->children[i]);
+        fprintf(stdout, "%p, %p;\n", root, root->children[i]);
     }
+
+    freeNode(root);
 
     return;
 }
