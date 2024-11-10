@@ -1,12 +1,14 @@
 /* Baser scanner test for compiler */
 /* DEFINITIONS */
 %{ 
-  #include "parser.tab.h"
   #include "lex_value.h"
+  #include "parser.tab.h"
   
   int yywrap(void) {
     return 1;
   }
+
+  int get_line_number(void);
 %}
 
 %option yylineno

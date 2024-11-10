@@ -1,16 +1,19 @@
 %{
        #include <stdio.h>
+       #include <string.h>
        int yylex(void);
        void yyerror (char const *mensagem);
        int get_line_number();
        extern void *arvore;
+       char *functionCallLabel(char *id);
 %}
 
-%code requires { #include "ast.h" }
-%code requires { #include "lex_value.h " }
-
+%code requires { 
+    #include "ast.h" 
+    #include "lex_value.h" 
+}
 %union {
-       LexValue lexical_value;
+       LexValue *lexical_value;
        Node *node;
 }
 
@@ -24,8 +27,6 @@
                        TK_LIT_INT TK_LIT_FLOAT
                        TK_ERRO
 
-%type <lexical_value> literal type
-
 %type <node> program 
              functionList function
              nonEmptyParamList 
@@ -34,7 +35,8 @@
              selectionCommand
              functionCall argumentsList
              expression expression1 expression2 expression3 expression4
-             term factor operand    
+             term factor operand
+             literal type
 
 %define parse.error verbose
 
@@ -50,9 +52,9 @@ functionList: functionList function { $$ = $1; addChild($1, $2); }
             ;
 
 function: TK_IDENTIFICADOR '=' nonEmptyParamList '>' type commandBlock 
-              { $$ = newNode($1->value); if ($6 != NULL) addChild($1, $6); }
+              { $$ = newNode($1->value); if ($6 != NULL) addChild($$, $6); }
         | TK_IDENTIFICADOR '=' '>' type commandBlock
-              { $$ = newNode($1->value); if ($5 != NULL) addChild($1, $5); }
+              { $$ = newNode($1->value); if ($5 != NULL) addChild($$, $5); }
         ;
 
 nonEmptyParamList: TK_IDENTIFICADOR '<' '-' type                            { $$ = NULL;}
@@ -85,7 +87,7 @@ idList: id            { $$ = $1; }
 
 /* A variable can be optionaly initialized if followed by TK_OC_LE '<=' and a literal */
 id: TK_IDENTIFICADOR                  { $$ = NULL; }
-  | TK_IDENTIFICADOR TK_OC_LE literal { $$ = newNode("<="); addChild($$, newNode($1->value)); addChild($3); }
+  | TK_IDENTIFICADOR TK_OC_LE literal { $$ = newNode("<="); addChild($$, newNode($1->value)); addChild($$, $3); }
   ;
 
 /* The selection command IF is followed by an optional ELSE */
@@ -95,7 +97,7 @@ selectionCommand: TK_PR_IF '(' expression ')' commandBlock TK_PR_ELSE commandBlo
                      { $$ = newNode("if"); addChild($$, $3); addChild($$, $5); }
                 ;
 
-functionCall: TK_IDENTIFICADOR '(' argumentsList ')'; { $$ = newNode(functionCallLabel($1->value)); addChild($1, $3); }
+functionCall: TK_IDENTIFICADOR '(' argumentsList ')' { $$ = newNode(functionCallLabel($1->value)); addChild($$, $3); };
 
 argumentsList: argumentsList ',' expression { $$ = $1; addChild($1, $3); }
             | expression                    { $$ = $1; }
