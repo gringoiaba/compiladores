@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "lex_value.h"
 
 LexValue *newLexValue(int lineno, LexType type, char *value) 
@@ -9,7 +10,7 @@ LexValue *newLexValue(int lineno, LexType type, char *value)
     if (lexVal != NULL) {
         lexVal->lineno = lineno;
         lexVal->type = type;
-        lexVal->value = strup(value);
+        lexVal->value = strdup(value);
     }
     return lexVal;
 }

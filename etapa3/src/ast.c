@@ -56,7 +56,7 @@ static void _printNode(FILE *foutput, Node *root, int depth)
     }
 }   
 
-static void printNode(Node *root) 
+void printNode(Node *root) 
 {
     FILE *foutput = stderr;
     if (root != NULL) {
