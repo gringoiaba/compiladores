@@ -30,7 +30,7 @@
              functionList function
              nonEmptyParamList 
              command commandList commandBlock
-             varDeclaration idList 
+             varDeclaration idList id
              selectionCommand
              functionCall argumentsList
              expression expression1 expression2 expression3 expression4
@@ -45,56 +45,60 @@ program: functionList { $$ = $1; arvore = $1; }
        | /* empty */  { $$ = NULL; arvore = NULL; }
        ;
 
-functionList: functionList function
-            | function
+functionList: functionList function { $$ = $1; addChild($1, $2); }
+            | function              { $$ = $1; }
             ;
 
-function: TK_IDENTIFICADOR '=' nonEmptyParamList '>' type commandBlock
+function: TK_IDENTIFICADOR '=' nonEmptyParamList '>' type commandBlock 
+              { $$ = newNode($1->value); if ($6 != NULL) addChild($1, $6); }
         | TK_IDENTIFICADOR '=' '>' type commandBlock
+              { $$ = newNode($1->value); if ($5 != NULL) addChild($1, $5); }
         ;
 
-nonEmptyParamList: TK_IDENTIFICADOR '<' '-' type {}
-                 | nonEmptyParamList TK_OC_OR TK_IDENTIFICADOR '<' '-' type
+nonEmptyParamList: TK_IDENTIFICADOR '<' '-' type                            { $$ = NULL;}
+                 | nonEmptyParamList TK_OC_OR TK_IDENTIFICADOR '<' '-' type { $$ = NULL; }
                  ;
 
-commandBlock: '{' commandList '}'
-            | '{' '}'
+commandBlock: '{' commandList '}' { $$ = $2; }
+            | '{' '}'             { $$ = NULL; }
             ;
 
-commandList: commandList command ';'
-           | command ';'
+commandList: commandList command ';' { $$ = $1; addChild($1, $2); }
+           | command ';'             { $$ = $1; }
            ;
 
-command: commandBlock
-       | varDeclaration
-       | selectionCommand                               /* Conditional expressions */
-       | functionCall     
-       | TK_IDENTIFICADOR '=' expression                /* Assignment */
-       | TK_PR_RETURN expression                        /* Return expression */
-       | TK_PR_WHILE '(' expression ')' commandBlock
+command: commandBlock                                { $$ = $1; }
+       | varDeclaration                              { $$ = $1; }
+       | selectionCommand                            { $$ = $1; }              
+       | functionCall                                { $$ = $1; }
+       | TK_IDENTIFICADOR '=' expression             { $$ = newNode("="); addChild($$, newNode($1->value)); addChild($$, $3); }
+       | TK_PR_RETURN expression                     { $$ = newNode("return"); addChild($$, $2); }  
+       | TK_PR_WHILE '(' expression ')' commandBlock { $$ = newNode("while"); addChild($$, $3); addChild($$, $5); }
        ;
        
-varDeclaration: type idList
+varDeclaration: type idList { $$ = $2; }
 
 /* It is possible to declare multiple variables at a time */ 
-idList: id 
-      | idList ',' id
+idList: id            { $$ = $1; }
+      | idList ',' id { $$ = $1; addChild($1, $3); }
       ;
 
 /* A variable can be optionaly initialized if followed by TK_OC_LE '<=' and a literal */
-id: TK_IDENTIFICADOR
-  | TK_IDENTIFICADOR TK_OC_LE literal
+id: TK_IDENTIFICADOR                  { $$ = NULL; }
+  | TK_IDENTIFICADOR TK_OC_LE literal { $$ = newNode("<="); addChild($$, newNode($1->value)); addChild($3); }
   ;
 
 /* The selection command IF is followed by an optional ELSE */
 selectionCommand: TK_PR_IF '(' expression ')' commandBlock TK_PR_ELSE commandBlock
+                     { $$ = newNode("if"); addChild($$, $3); addChild($$, $5); newNode("else"); addChild($$, $7); }
                 | TK_PR_IF '(' expression ')' commandBlock
+                     { $$ = newNode("if"); addChild($$, $3); addChild($$, $5); }
                 ;
 
-functionCall: TK_IDENTIFICADOR '(' argumentsList ')';
+functionCall: TK_IDENTIFICADOR '(' argumentsList ')'; { $$ = newNode(functionCallLabel($1->value)); addChild($1, $3); }
 
-argumentsList: argumentsList ',' expression 
-            | expression
+argumentsList: argumentsList ',' expression { $$ = $1; addChild($1, $3); }
+            | expression                    { $$ = $1; }
             ;
 
 expression: expression TK_OC_OR expression1 { $$ = newNode("|"); addChild($$, $1); addChild($$, $3); }
@@ -143,8 +147,8 @@ literal: TK_LIT_INT   { $$ = newNode($1->value); }
        | TK_LIT_FLOAT { $$ = newNode($1->value); }
        ; 
 
-type: TK_PR_INT   { $$ = newNode($1->value); }
-    | TK_PR_FLOAT { $$ = newNode($1->value); }
+type: TK_PR_INT
+    | TK_PR_FLOAT
     ;
 
 %%
@@ -152,4 +156,19 @@ type: TK_PR_INT   { $$ = newNode($1->value); }
 void yyerror (char const *mensagem) 
 {
         fprintf(stderr, "%s on line %d\n", mensagem, get_line_number());
+}
+
+/* Returns label string for a function call as "call functionID' */
+char *functionCallLabel(char *id)
+{
+       char *label = (char *) malloc(strlen(id) + strlen("call ") + 2);
+
+       if (label == NULL) {
+              return NULL;
+       }
+
+       strcpy(label, "call ");
+       strcat(label, id);
+
+       return label;
 }
