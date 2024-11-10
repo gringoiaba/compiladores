@@ -3,13 +3,15 @@
        int yylex(void);
        void yyerror (char const *mensagem);
        int get_line_number();
+       extern void *arvore;
 %}
+
 %code requires { #include "ast.h" }
 %code requires { #include "lex_value.h " }
 
 %union {
        LexValue lexical_value;
-       Tree *tree;
+       Node *node;
 }
 
 %token <lexical_value> TK_PR_INT TK_PR_FLOAT
@@ -21,37 +23,37 @@
                        TK_IDENTIFICADOR
                        TK_LIT_INT TK_LIT_FLOAT
                        TK_ERRO
-/* Uncertaint Tree types:
- * - program
- */
-%type <tree> functionList function
+
+%type <lexical_value> literal type
+
+%type <node> program 
+             functionList function
              nonEmptyParamList 
              command commandList commandBlock
              varDeclaration idList 
-             selectionCommand 
+             selectionCommand
              functionCall argumentsList
-             expression expression1 expression2 expression3
-             term factor operand 
-             
-
+             expression expression1 expression2 expression3 expression4
+             term factor operand    
 
 %define parse.error verbose
 
 %%
 
 /* A program is composed of an optional list of functions*/
-program: functionList
-       | /* empty */
+program: functionList { $$ = $1; arvore = $1; }
+       | /* empty */  { $$ = NULL; arvore = NULL; }
        ;
 
 functionList: functionList function
             | function
             ;
 
-function: TK_IDENTIFICADOR '=' nonEmptyParamList '>' type commandBlock;
-        | TK_IDENTIFICADOR '=' '>' type commandBlock;
+function: TK_IDENTIFICADOR '=' nonEmptyParamList '>' type commandBlock
+        | TK_IDENTIFICADOR '=' '>' type commandBlock
+        ;
 
-nonEmptyParamList: TK_IDENTIFICADOR '<' '-' type
+nonEmptyParamList: TK_IDENTIFICADOR '<' '-' type {}
                  | nonEmptyParamList TK_OC_OR TK_IDENTIFICADOR '<' '-' type
                  ;
 
@@ -91,58 +93,58 @@ selectionCommand: TK_PR_IF '(' expression ')' commandBlock TK_PR_ELSE commandBlo
 
 functionCall: TK_IDENTIFICADOR '(' argumentsList ')';
 
-argumentsList: argumentsList ',' expression
+argumentsList: argumentsList ',' expression 
             | expression
             ;
 
-expression: expression TK_OC_OR expression1
-          | expression1
+expression: expression TK_OC_OR expression1 { $$ = newNode("|"); addChild($$, $1); addChild($$, $3); }
+          | expression1                     { $$ = $1; }
           ;
 
-expression1: expression1 TK_OC_AND expression2
-           | expression2
+expression1: expression1 TK_OC_AND expression2 { $$ = newNode("&"); addChild($$, $1); addChild($$, $3); }
+           | expression2                       { $$ = $1; }
            ;
 
-expression2: expression2 TK_OC_NE expression3
-           | expression2 TK_OC_EQ expression3
-           | expression3
+expression2: expression2 TK_OC_NE expression3 { $$ = newNode("!="); addChild($$, $1); addChild($$, $3); }
+           | expression2 TK_OC_EQ expression3 { $$ = newNode("=="); addChild($$, $1); addChild($$, $3); }
+           | expression3                      { $$ = $1; }
            ;
 
-expression3: expression3 TK_OC_GE expression4
-           | expression3 TK_OC_LE expression4
-           | expression3 '>' expression4
-           | expression3 '<' expression4
-           | expression4
+expression3: expression3 TK_OC_GE expression4 { $$ = newNode(">="); addChild($$, $1); addChild($$, $3); }
+           | expression3 TK_OC_LE expression4 { $$ = newNode("<="); addChild($$, $1); addChild($$, $3); }
+           | expression3 '>' expression4      { $$ = newNode(">"); addChild($$, $1); addChild($$, $3); }
+           | expression3 '<' expression4      { $$ = newNode("<"); addChild($$, $1); addChild($$, $3); }
+           | expression4                      { $$ = $1; }
            ;
 
-expression4: expression4 '+' term
-           | expression4 '-' term
-           | term
+expression4: expression4 '+' term { $$ = newNode("+"); addChild($$, $1); addChild($$, $3); }
+           | expression4 '-' term { $$ = newNode("-"); addChild($$, $1); addChild($$, $3); }
+           | term                 { $$ = $1; }
            ;
 
-term: term '%' factor
-    | term '*' factor
-    | term '/' factor
-    | factor
+term: term '%' factor { $$ = newNode("%"); addChild($$, $1); addChild($$, $3); }
+    | term '*' factor { $$ = newNode("*"); addChild($$, $1); addChild($$, $3); }
+    | term '/' factor { $$ = newNode("/"); addChild($$, $1); addChild($$, $3); }
+    | factor          { $$ = $1; }
     ;
 
-factor: '!' operand
-      | '-' operand
-      | operand
+factor: '!' operand { $$ = newNode("!"); addChild($$, $2); }
+      | '-' operand { $$ = newNode("-"); addChild($$, $2); }
+      | operand     { $$ = $1; }
       ;
 
-operand: '(' expression ')'
-       | TK_IDENTIFICADOR
-       | functionCall
-       | literal
+operand: '(' expression ')' { $$ = $2; }
+       | TK_IDENTIFICADOR   { $$ = newNode($1->value); }
+       | functionCall       { $$ = $1; }
+       | literal            { $$ = $1; }
        ;
 
-literal: TK_LIT_INT
-       | TK_LIT_FLOAT
+literal: TK_LIT_INT   { $$ = newNode($1->value); }
+       | TK_LIT_FLOAT { $$ = newNode($1->value); }
        ; 
 
-type: TK_PR_INT
-    | TK_PR_FLOAT
+type: TK_PR_INT   { $$ = newNode($1->value); }
+    | TK_PR_FLOAT { $$ = newNode($1->value); }
     ;
 
 %%
