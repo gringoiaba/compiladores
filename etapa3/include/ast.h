@@ -1,16 +1,18 @@
-#ifndef TREE_H
-#define TREE_H
+#ifndef AST_H
+#define AST_H
 
-typedef struct tree {
+typedef struct node {
     char *label;
     int numChildren;
-    struct tree **children;
-} Tree;
+    struct node **children;
+} Node;
 
-Tree *newTree(char *label);
-void addChild(Tree *parent, Tree *child);
-void freeTree(Tree *root);
-void printTree(Tree *root);
-void printTreeGraphviz(Tree *root);
+Node *newNode(char *label);
+void addChild(Node *parent, Node *child);
+void freeNode(Node *root);
+void printNode(Node *root);
+void printNodeGraphviz(Node *root);
+
+extern void exporta(void *arvore);
 
 #endif

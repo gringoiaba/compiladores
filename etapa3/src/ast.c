@@ -5,10 +5,10 @@
 
 #define OUTPUT_FILE "output.dot"
 
-Tree *newTree(char *label) 
+Node *newNode(char *label) 
 {
-    Tree *t = NULL;
-    t = calloc(1, sizeof(Tree));
+    Node *t = NULL;
+    t = calloc(1, sizeof(Node));
     if (t != NULL) {
         t->label = label;
         t->numChildren = 0;
@@ -17,22 +17,22 @@ Tree *newTree(char *label)
     return t;
 }
 
-void addChild(Tree *parent, Tree *child) 
+void addChild(Node *parent, Node *child) 
 {
     if (parent != NULL && child != NULL) {
         parent->numChildren++;
-        parent->children = realloc(parent->children, parent->numChildren * sizeof(Tree *));
+        parent->children = realloc(parent->children, parent->numChildren * sizeof(Node *));
         parent->children[parent->numChildren - 1] = child;
     } else {
         fprintf(stderr, "Error: %s tree = %p / %p.\n", __FUNCTION__, parent, child);
     }
 }
 
-void freeTree(Tree *root) 
+void freeNode(Node *root) 
 {
     if (root != NULL) {
         for (int i = 0; i < root->numChildren; i++) {
-            freeTree(root->children[i]);
+            freeNode(root->children[i]);
         }
         free(root->children);
         free(root->label);
@@ -42,42 +42,42 @@ void freeTree(Tree *root)
     }
 }
 
-static void _printTree(FILE *foutput, Tree *root, int depth) 
+static void _printNode(FILE *foutput, Node *root, int depth) 
 {
     if (root != NULL) {
         fprintf(foutput, "%d%*s: Node %s has %d children\n", depth, depth*2, "", root->label, root->numChildren);
         for (int i = 0; i < root->numChildren; i++) {
-            _printTree(foutput, root->children[i], depth+1);
+            _printNode(foutput, root->children[i], depth+1);
         }
     } else {
         fprintf(stderr, "Error: %s tree = %p.\n", __FUNCTION__, root);
     }
 }   
 
-static void printTree(Tree *root) 
+static void printNode(Node *root) 
 {
     FILE *foutput = stderr;
     if (root != NULL) {
-        _printTree(foutput, root, 0);
+        _printNode(foutput, root, 0);
     } else {
         fprintf(stderr, "Error: %s tree = %p.\n", __FUNCTION__, root);
     }
 }
 
-static void _printTreeGraphviz(FILE *foutput, Tree *root) 
+static void _printNodeGraphviz(FILE *foutput, Node *root) 
 {
     if (root != NULL) {
         fprintf(foutput, "  %ld [ label=\"%s\" ];\n", (long)root, root->label);
         for (int i = 0; i < root->numChildren; i++) {
             fprintf(foutput, "  %ld -> %ld;\n", (long)root, (long)root->children[i]);
-            _printTreeGraphviz(foutput, root->children[i]);
+            _printNodeGraphviz(foutput, root->children[i]);
         }
     } else {
         fprintf(stderr, "Error: %s tree = %p.\n", __FUNCTION__, root);
     }
 }
 
-void printTreeGraphviz(Tree *root) 
+void printNodeGraphviz(Node *root) 
 {
     FILE *foutput = fopen(OUTPUT_FILE, "w+");
     if (foutput == NULL) {
@@ -86,9 +86,26 @@ void printTreeGraphviz(Tree *root)
     }
     if (root != NULL) {
         fprintf(foutput, "digraph G {\n");
-        _printTreeGraphviz(foutput, root);
+        _printNodeGraphviz(foutput, root);
         fprintf(foutput, "}\n");
     } else {
         fprintf(stderr, "Error: %s tree = %p.\n", __FUNCTION__, root);
     }
+}
+
+void exporta(void *arvore) 
+{
+    if (arvore == NULL) {
+        return;
+    }
+
+    Node *root = (Node *)arvore;
+        fprintf(stdout, "%p [label=\"%s\"]; \n", root, root->label);
+
+    int i = 0;
+    for (i = 0; i < root->numChildren; i++) {
+        exporta(root->children[i]);
+    }
+
+    return;
 }
