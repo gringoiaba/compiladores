@@ -36,14 +36,14 @@
              functionCall argumentsList
              expression expression1 expression2 expression3 expression4
              term factor operand
-             literal type
+             literal
 
 %define parse.error verbose
 
 %%
 
 /* A program is composed of an optional list of functions*/
-program: functionList { $$ = $1; arvore = $1; }
+program: functionList { $$ = $1; arvore = $$; }
        | /* empty */  { $$ = NULL; arvore = NULL; }
        ;
 
@@ -65,7 +65,7 @@ commandBlock: '{' commandList '}' { $$ = $2; }
             | '{' '}'             { $$ = NULL; }
             ;
 
-commandList: commandList command ';' { $$ = $1; addChild($1, $2); }
+commandList: commandList command ';' { $$ = $1; if ($2 != NULL) addChild($1, $2); }
            | command ';'             { $$ = $1; }
            ;
 
@@ -75,7 +75,7 @@ command: commandBlock                                { $$ = $1; }
        | functionCall                                { $$ = $1; }
        | TK_IDENTIFICADOR '=' expression             { $$ = newNode("="); addChild($$, newNode($1->value)); addChild($$, $3); }
        | TK_PR_RETURN expression                     { $$ = newNode("return"); addChild($$, $2); }  
-       | TK_PR_WHILE '(' expression ')' commandBlock { $$ = newNode("while"); addChild($$, $3); addChild($$, $5); }
+       | TK_PR_WHILE '(' expression ')' commandBlock { $$ = newNode("while"); addChild($$, $3); if ($5 != NULL) addChild($$, $5); }
        ;
        
 varDeclaration: type idList { $$ = $2; }
@@ -92,9 +92,9 @@ id: TK_IDENTIFICADOR                  { $$ = NULL; }
 
 /* The selection command IF is followed by an optional ELSE */
 selectionCommand: TK_PR_IF '(' expression ')' commandBlock TK_PR_ELSE commandBlock
-                     { $$ = newNode("if"); addChild($$, $3); addChild($$, $5); newNode("else"); addChild($$, $7); }
+                     { $$ = newNode("if"); addChild($$, $3); if ($5 != NULL) addChild($$, $5); newNode("else"); if ($7 != NULL) addChild($$, $7); }
                 | TK_PR_IF '(' expression ')' commandBlock
-                     { $$ = newNode("if"); addChild($$, $3); addChild($$, $5); }
+                     { $$ = newNode("if"); addChild($$, $3); if ($5 != NULL) addChild($$, $5); }
                 ;
 
 functionCall: TK_IDENTIFICADOR '(' argumentsList ')' { $$ = newNode(functionCallLabel($1->value)); addChild($$, $3); };
@@ -157,7 +157,7 @@ type: TK_PR_INT
 
 void yyerror (char const *mensagem) 
 {
-        fprintf(stderr, "%s on line %d\n", mensagem, get_line_number());
+        fprintf(stderr, "Error at line %d: %s\n", mensagem, get_line_number());
 }
 
 /* Returns label string for a function call as "call functionID' */
