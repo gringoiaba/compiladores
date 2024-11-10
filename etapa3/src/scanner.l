@@ -2,6 +2,7 @@
 /* DEFINITIONS */
 %{ 
   #include "parser.tab.h"
+  #include "lex_value.h"
   
   int yywrap(void) {
     return 1;
@@ -29,10 +30,10 @@
 
 [-!/*%+<>{}()=,;]       { return yytext[0]; }
 
-[a-z_][a-z_0-9]*        { return TK_IDENTIFICADOR; }
+[a-z_][a-z_0-9]*        { yylval.lexical_value = newLexValue(get_line_number(), IDENTIFIER, strdup(yytext)); return TK_IDENTIFICADOR; }
 
-[0-9]+          { return TK_LIT_INT; }
-[0-9]*"."[0-9]+ { return TK_LIT_FLOAT; }
+[0-9]+          { yylval.lexical_value = newLexValue(get_line_number(), LITERAL, strdup(yytext)); return TK_LIT_INT; }
+[0-9]*"."[0-9]+ { yylval.lexical_value = newLexValue(get_line_number(), LITERAL, strdup(yytext)); return TK_LIT_FLOAT; }
 
 "//".*          { /* ignore single line comments */ }
 [ \t\n]+        { /* ignore whitespaces */ }  
