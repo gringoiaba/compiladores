@@ -7,12 +7,12 @@
 
 /* AST FUNCTIONS ADAPTED FROM TUTORIAL */ 
 
-Node *newNode(char *label) 
+Node *newNode(const char *label) 
 {
     Node *t = NULL;
     t = calloc(1, sizeof(Node));
     if (t != NULL) {
-        t->label = label;
+        t->label = strdup(label);
         t->numChildren = 0;
         t->children = NULL;
     }
@@ -23,10 +23,10 @@ void addChild(Node *parent, Node *child)
 {
     if (parent != NULL && child != NULL) {
         parent->numChildren++;
-        parent->children = realloc(parent->children, parent->numChildren * sizeof(Node *));
-        parent->children[parent->numChildren - 1] = child;
+        parent->children = realloc(parent->children, parent->numChildren * sizeof(Node*));
+        parent->children[parent->numChildren-1] = child;
     } else {
-        fprintf(stderr, "Error: %s tree = %p / %p.\n", __FUNCTION__, parent, child);
+        fprintf(stderr, "Error: %s received as param tree = %p / %p.\n", __FUNCTION__, parent, child);
     }
 }
 
@@ -40,7 +40,7 @@ void freeNode(Node *root)
         free(root->label);
         free(root);
     } else {
-        fprintf(stderr, "Error: %s tree = %p.\n", __FUNCTION__, root);
+        fprintf(stderr, "Error: %s received as param tree = %p.\n", __FUNCTION__, root);
     }
 }
 
@@ -52,7 +52,7 @@ static void _printNode(FILE *foutput, Node *root, int depth)
             _printNode(foutput, root->children[i], depth+1);
         }
     } else {
-        fprintf(stderr, "Error: %s tree = %p.\n", __FUNCTION__, root);
+        fprintf(stderr, "Error: %s received as param tree = %p.\n", __FUNCTION__, root);
     }
 }   
 
@@ -62,7 +62,7 @@ void printNode(Node *root)
     if (root != NULL) {
         _printNode(foutput, root, 0);
     } else {
-        fprintf(stderr, "Error: %s tree = %p.\n", __FUNCTION__, root);
+        fprintf(stderr, "Error: %s received as param tree = %p.\n", __FUNCTION__, root);
     }
 }
 
@@ -78,7 +78,7 @@ static void _printNodeGraphviz(FILE *foutput, Node *root)
             _printNodeGraphviz(foutput, root->children[i]);
         }
     } else {
-        fprintf(stderr, "Error: %s tree = %p.\n", __FUNCTION__, root);
+        fprintf(stderr, "Error: %s received as param tree = %p.\n", __FUNCTION__, root);
     }
 }
 
@@ -94,10 +94,11 @@ void printNodeGraphviz(Node *root)
         _printNodeGraphviz(foutput, root);
         fprintf(foutput, "}\n");
     } else {
-        fprintf(stderr, "Error: %s tree = %p.\n", __FUNCTION__, root);
+        fprintf(stderr, "Error: %s received as param tree = %p.\n", __FUNCTION__, root);
     }
 }
 
+/* Prints the tree in the specified format */
 void exporta(void *arvore) 
 {
     if (arvore == NULL) {

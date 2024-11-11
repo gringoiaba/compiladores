@@ -7,7 +7,7 @@ typedef struct node {
     struct node **children;
 } Node;
 
-Node *newNode(char *label);
+Node *newNode(const char *label);
 void addChild(Node *parent, Node *child);
 void freeNode(Node *root);
 void printNode(Node *root);

@@ -27,6 +27,8 @@
                        TK_LIT_INT TK_LIT_FLOAT
                        TK_ERRO
 
+%type <lexical_value> literal
+
 %type <node> program 
              functionList function
              nonEmptyParamList 
@@ -36,7 +38,6 @@
              functionCall argumentsList
              expression expression1 expression2 expression3 expression4
              term factor operand
-             literal
 
 %define parse.error verbose
 
@@ -44,7 +45,7 @@
 
 /* A program is composed of an optional list of functions*/
 program: functionList { $$ = $1; arvore = $$; }
-       | /* empty */  { $$ = NULL; arvore = NULL; }
+       | /* empty */  { $$ = NULL; arvore = $$; }
        ;
 
 functionList: functionList function { $$ = $1; addChild($1, $2); }
@@ -87,7 +88,7 @@ idList: id            { $$ = $1; }
 
 /* A variable can be optionaly initialized if followed by TK_OC_LE '<=' and a literal */
 id: TK_IDENTIFICADOR                  { $$ = NULL; }
-  | TK_IDENTIFICADOR TK_OC_LE literal { $$ = newNode("<="); addChild($$, newNode($1->value)); addChild($$, $3); }
+  | TK_IDENTIFICADOR TK_OC_LE literal { $$ = newNode("<="); addChild($$, newNode($1->value)); addChild($$, newNode($3->value)); }
   ;
 
 /* The selection command IF is followed by an optional ELSE */
@@ -142,11 +143,11 @@ factor: '!' operand { $$ = newNode("!"); addChild($$, $2); }
 operand: '(' expression ')' { $$ = $2; }
        | TK_IDENTIFICADOR   { $$ = newNode($1->value); }
        | functionCall       { $$ = $1; }
-       | literal            { $$ = $1; }
+       | literal            { $$ = newNode($1->value); }
        ;
 
-literal: TK_LIT_INT   { $$ = newNode($1->value); }
-       | TK_LIT_FLOAT { $$ = newNode($1->value); }
+literal: TK_LIT_INT   { $$ = $1; }
+       | TK_LIT_FLOAT { $$ = $1; }
        ; 
 
 type: TK_PR_INT
@@ -157,7 +158,7 @@ type: TK_PR_INT
 
 void yyerror (char const *mensagem) 
 {
-        fprintf(stderr, "Error at line %d: %s\n", mensagem, get_line_number());
+        fprintf(stderr, "Error at line %d: %s\n",get_line_number(), mensagem);
 }
 
 /* Returns label string for a function call as "call functionID' */
