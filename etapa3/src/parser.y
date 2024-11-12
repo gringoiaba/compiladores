@@ -44,11 +44,11 @@
 %%
 
 /* A program is composed of an optional list of functions*/
-program: functionList { $$ = $1; arvore = $$; }
+program: functionList { $$ = $1; arvore = $$; printNodeGraphviz((Node *)arvore); }
        | /* empty */  { $$ = NULL; arvore = $$; }
        ;
 
-functionList: functionList function { $$ = $1; addChild($1, $2); }
+functionList: function functionList { $$ = $1; addChild($1, $2); }
             | function              { $$ = $1; }
             ;
 
@@ -66,7 +66,16 @@ commandBlock: '{' commandList '}' { $$ = $2; }
             | '{' '}'             { $$ = NULL; }
             ;
 
-commandList: commandList command ';' { $$ = $1; if ($2 != NULL) addChild($1, $2); }
+commandList: commandList command ';' { 
+              if ($1 != NULL) {
+                     $$ = $1;
+                     if ($2 != NULL) {
+                            addChild($$, $2);
+                     }
+              } else {
+                     $$ = $2;
+              } 
+       }
            | command ';'             { $$ = $1; }
            ;
 
@@ -83,7 +92,14 @@ varDeclaration: type idList { $$ = $2; }
 
 /* It is possible to declare multiple variables at a time */ 
 idList: id            { $$ = $1; }
-      | idList ',' id { $$ = $1; addChild($1, $3); }
+      | id ',' idList { 
+              if ($1 != NULL) {
+                     $$ = $1;
+                     if ($3 != NULL) {
+                            addChild($$, $3);
+                     }
+              } else {
+                     $$ = $3; } }
       ;
 
 /* A variable can be optionaly initialized if followed by TK_OC_LE '<=' and a literal */
@@ -141,9 +157,9 @@ factor: '!' operand { $$ = newNode("!"); addChild($$, $2); }
       ;
 
 operand: '(' expression ')' { $$ = $2; }
-       | TK_IDENTIFICADOR   { $$ = newNode($1->value); }
+       | TK_IDENTIFICADOR   { $$ = newNode($1->value); freeLexValue($1); }
        | functionCall       { $$ = $1; }
-       | literal            { $$ = newNode($1->value); }
+       | literal            { $$ = newNode($1->value); freeLexValue($1); }
        ;
 
 literal: TK_LIT_INT   { $$ = $1; }

@@ -109,8 +109,8 @@ void exporta(void *arvore)
         fprintf(stdout, "%p [label=\"%s\"];\n", root, root->label);
 
     for (int i = 0; i < root->numChildren; i++) {
-        exporta(root->children[i]);
         fprintf(stdout, "%p, %p;\n", root, root->children[i]);
+        exporta(root->children[i]);
     }
 
     freeNode(root);
