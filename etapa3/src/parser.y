@@ -44,7 +44,7 @@
 %%
 
 /* A program is composed of an optional list of functions*/
-program: functionList { $$ = $1; arvore = $$; printNodeGraphviz((Node *)arvore); }
+program: functionList { $$ = $1; arvore = $$; }
        | /* empty */  { $$ = NULL; arvore = $$; }
        ;
 
@@ -157,9 +157,9 @@ factor: '!' operand { $$ = newNode("!"); addChild($$, $2); }
       ;
 
 operand: '(' expression ')' { $$ = $2; }
-       | TK_IDENTIFICADOR   { $$ = newNode($1->value); freeLexValue($1); }
+       | TK_IDENTIFICADOR   { $$ = newNode($1->value); }
        | functionCall       { $$ = $1; }
-       | literal            { $$ = newNode($1->value); freeLexValue($1); }
+       | literal            { $$ = newNode($1->value); }
        ;
 
 literal: TK_LIT_INT   { $$ = $1; }
