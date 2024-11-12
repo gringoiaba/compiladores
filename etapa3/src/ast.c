@@ -98,6 +98,35 @@ void printNodeGraphviz(Node *root)
     }
 }
 
+void printEdges(Node *node)
+{
+    if (node == NULL) {
+        return;
+    }
+
+    for (int i = 0; i < node->numChildren; i++) {
+        if (node->children[i] != NULL) {
+            fprintf(stdout, "%p, %p;\n", node, node->children[i]);
+            printEdges(node->children[i]);
+        }
+    }
+}
+
+void printLabels(Node *node)
+{
+    if (node == NULL) {
+        return;
+    }
+
+    fprintf(stdout, "%p [label=\"%s\"];\n", node, node->label);
+
+    for (int i = 0; i < node->numChildren; i++) {
+        if (node->children[i] != NULL) {
+            printLabels(node->children[i]);
+        }
+    }
+}
+
 /* Prints the tree in the specified format */
 void exporta(void *arvore) 
 {
@@ -106,12 +135,9 @@ void exporta(void *arvore)
     }
 
     Node *root = (Node *)arvore;
-        fprintf(stdout, "%p [label=\"%s\"];\n", root, root->label);
-
-    for (int i = 0; i < root->numChildren; i++) {
-        fprintf(stdout, "%p, %p;\n", root, root->children[i]);
-        exporta(root->children[i]);
-    }
+    printEdges(root);
+    fprintf(stdout, "\n");
+    printLabels(root);
 
     freeNode(root);
 
