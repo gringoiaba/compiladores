@@ -12,7 +12,7 @@ typedef struct lexValue {
     char *value;
 } LexValue;
 
-LexValue *newLexValue(int lineno, LexType type, char *value);
-void freeLexValue(LexValue *lexValue);
+LexValue newLexValue(int lineno, LexType type, char *value);
+void freeLexValue(LexValue lexValue);
 
 #endif

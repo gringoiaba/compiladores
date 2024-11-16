@@ -13,7 +13,7 @@
     #include "lex_value.h" 
 }
 %union {
-       LexValue *lexical_value;
+       LexValue lexical_value;
        Node *node;
 }
 
@@ -44,7 +44,7 @@
 %%
 
 /* A program is composed of an optional list of functions*/
-program: functionList { $$ = $1; arvore = $$; }
+program: functionList { $$ = $1; arvore = $$;}
        | /* empty */  { $$ = NULL; arvore = $$; }
        ;
 
@@ -53,13 +53,13 @@ functionList: function functionList { $$ = $1; addChild($1, $2); }
             ;
 
 function: TK_IDENTIFICADOR '=' nonEmptyParamList '>' type commandBlock 
-              { $$ = newNode($1->value); if ($6 != NULL) addChild($$, $6); }
+              { $$ = newNode($1.value); if ($6 != NULL) addChild($$, $6); freeLexValue($1);}
         | TK_IDENTIFICADOR '=' '>' type commandBlock
-              { $$ = newNode($1->value); if ($5 != NULL) addChild($$, $5); }
+              { $$ = newNode($1.value); if ($5 != NULL) addChild($$, $5); freeLexValue($1);}
         ;
 
-nonEmptyParamList: TK_IDENTIFICADOR '<' '-' type                            { $$ = NULL;}
-                 | nonEmptyParamList TK_OC_OR TK_IDENTIFICADOR '<' '-' type { $$ = NULL; }
+nonEmptyParamList: TK_IDENTIFICADOR '<' '-' type                            { $$ = NULL; freeLexValue($1);}
+                 | nonEmptyParamList TK_OC_OR TK_IDENTIFICADOR '<' '-' type { $$ = NULL; freeLexValue($3);}
                  ;
 
 commandBlock: '{' commandList '}' { $$ = $2; }
@@ -83,7 +83,7 @@ command: commandBlock                                { $$ = $1; }
        | varDeclaration                              { $$ = $1; }
        | selectionCommand                            { $$ = $1; }              
        | functionCall                                { $$ = $1; }
-       | TK_IDENTIFICADOR '=' expression             { $$ = newNode("="); addChild($$, newNode($1->value)); addChild($$, $3); }
+       | TK_IDENTIFICADOR '=' expression             { $$ = newNode("="); addChild($$, newNode($1.value)); addChild($$, $3); freeLexValue($1); }
        | TK_PR_RETURN expression                     { $$ = newNode("return"); addChild($$, $2); }  
        | TK_PR_WHILE '(' expression ')' commandBlock { $$ = newNode("while"); addChild($$, $3); if ($5 != NULL) addChild($$, $5); }
        ;
@@ -103,8 +103,8 @@ idList: id            { $$ = $1; }
       ;
 
 /* A variable can be optionaly initialized if followed by TK_OC_LE '<=' and a literal */
-id: TK_IDENTIFICADOR                  { $$ = NULL; }
-  | TK_IDENTIFICADOR TK_OC_LE literal { $$ = newNode("<="); addChild($$, newNode($1->value)); addChild($$, newNode($3->value)); }
+id: TK_IDENTIFICADOR                  { $$ = NULL; freeLexValue($1);}
+  | TK_IDENTIFICADOR TK_OC_LE literal { $$ = newNode("<="); addChild($$, newNode($1.value)); addChild($$, newNode($3.value)); freeLexValue($1);}
   ;
 
 /* The selection command IF is followed by an optional ELSE */
@@ -114,7 +114,8 @@ selectionCommand: TK_PR_IF '(' expression ')' commandBlock TK_PR_ELSE commandBlo
                      { $$ = newNode("if"); addChild($$, $3); if ($5 != NULL) addChild($$, $5); }
                 ;
 
-functionCall: TK_IDENTIFICADOR '(' argumentsList ')' { $$ = newNode(functionCallLabel($1->value)); addChild($$, $3); };
+functionCall: TK_IDENTIFICADOR '(' argumentsList ')' { $$ = newNode(functionCallLabel($1.value)); addChild($$, $3); freeLexValue($1); }
+            ;
 
 argumentsList: argumentsList ',' expression { $$ = $1; addChild($1, $3); }
             | expression                    { $$ = $1; }
@@ -157,9 +158,9 @@ factor: '!' operand { $$ = newNode("!"); addChild($$, $2); }
       ;
 
 operand: '(' expression ')' { $$ = $2; }
-       | TK_IDENTIFICADOR   { $$ = newNode($1->value); }
+       | TK_IDENTIFICADOR   { $$ = newNode($1.value); freeLexValue($1); }
        | functionCall       { $$ = $1; }
-       | literal            { $$ = newNode($1->value); }
+       | literal            { $$ = newNode($1.value); freeLexValue($1); }
        ;
 
 literal: TK_LIT_INT   { $$ = $1; }
