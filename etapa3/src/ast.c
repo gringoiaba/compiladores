@@ -30,6 +30,21 @@ void addChild(Node *parent, Node *child)
     }
 }
 
+Node *getLastNode(Node *root)
+{
+    if (root == NULL) {
+        return NULL;
+    }
+    
+    int n = root->numChildren;
+    while(root->children[n-1] != NULL) {
+        root = root->children[n-1];
+        n = root->numChildren;
+    }
+
+    return root;
+}
+
 void freeNode(Node *root) 
 {
     if (root != NULL) {

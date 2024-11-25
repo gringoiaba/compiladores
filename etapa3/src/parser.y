@@ -13,21 +13,21 @@
     #include "lex_value.h" 
 }
 %union {
-       LexValue lexical_value;
+       LexValue *lexical_value;
        Node *node;
 }
 
-%token <lexical_value> TK_PR_INT TK_PR_FLOAT
-                       TK_PR_IF TK_PR_ELSE TK_PR_WHILE
-                       TK_PR_RETURN
-                       TK_OC_LE TK_OC_GE
-                       TK_OC_EQ TK_OC_NE
-                       TK_OC_AND TK_OC_OR
-                       TK_IDENTIFICADOR
-                       TK_LIT_INT TK_LIT_FLOAT
-                       TK_ERRO
+%token TK_PR_INT TK_PR_FLOAT
+       TK_PR_IF TK_PR_ELSE TK_PR_WHILE
+       TK_PR_RETURN
+       TK_OC_LE TK_OC_GE
+       TK_OC_EQ TK_OC_NE
+       TK_OC_AND TK_OC_OR
+       TK_ERRO
 
-%type <lexical_value> literal
+%token <lexical_value> TK_IDENTIFICADOR
+                       TK_LIT_INT TK_LIT_FLOAT
+
 
 %type <node> program 
              functionList function
@@ -38,43 +38,40 @@
              functionCall argumentsList
              expression expression1 expression2 expression3 expression4
              term factor operand
+             literal identifier
 
 %define parse.error verbose
 
 %%
 
 /* A program is composed of an optional list of functions*/
-program: functionList { $$ = $1; arvore = $$;}
+program: functionList { $$ = $1; arvore = $$; printNodeGraphviz((Node *) arvore);}
        | /* empty */  { $$ = NULL; arvore = $$; }
        ;
 
-functionList: function functionList { $$ = $1; addChild($1, $2); }
+functionList: function functionList { $$ = $1;  addChild($1, $2); }
             | function              { $$ = $1; }
             ;
 
-function: TK_IDENTIFICADOR '=' nonEmptyParamList '>' type commandBlock 
-              { $$ = newNode($1.value); if ($6 != NULL) addChild($$, $6); freeLexValue($1);}
-        | TK_IDENTIFICADOR '=' '>' type commandBlock
-              { $$ = newNode($1.value); if ($5 != NULL) addChild($$, $5); freeLexValue($1);}
+function: identifier '=' nonEmptyParamList '>' type commandBlock 
+              { $$ = $1; if ($6 != NULL) addChild($$, $6); }
+        | identifier '=' '>' type commandBlock
+              { $$ = $1; if ($5 != NULL) addChild($$, $5); }
         ;
 
-nonEmptyParamList: TK_IDENTIFICADOR '<' '-' type                            { $$ = NULL; freeLexValue($1);}
-                 | nonEmptyParamList TK_OC_OR TK_IDENTIFICADOR '<' '-' type { $$ = NULL; freeLexValue($3);}
+nonEmptyParamList: identifier '<' '-' type                            { $$ = NULL; }
+                 | nonEmptyParamList TK_OC_OR identifier '<' '-' type { $$ = NULL; }
                  ;
 
 commandBlock: '{' commandList '}' { $$ = $2; }
             | '{' '}'             { $$ = NULL; }
             ;
 
-commandList: commandList command ';' { 
-              if ($1 != NULL) {
-                     $$ = $1;
-                     if ($2 != NULL) {
-                            addChild($$, $2);
-                     }
-              } else {
-                     $$ = $2;
-              } 
+commandList: command ';' commandList 
+       { 
+              $$ = $1;
+              if ($$ != NULL) { if ($3 != NULL) addChild($$, $3); }
+              else $$ = $3;
        }
            | command ';'             { $$ = $1; }
            ;
@@ -83,11 +80,12 @@ command: commandBlock                                { $$ = $1; }
        | varDeclaration                              { $$ = $1; }
        | selectionCommand                            { $$ = $1; }              
        | functionCall                                { $$ = $1; }
-       | TK_IDENTIFICADOR '=' expression             { $$ = newNode("="); addChild($$, newNode($1.value)); addChild($$, $3); freeLexValue($1); }
+       | identifier '=' expression                   { $$ = newNode("="); addChild($$, $1); addChild($$, $3); }
        | TK_PR_RETURN expression                     { $$ = newNode("return"); addChild($$, $2); }  
        | TK_PR_WHILE '(' expression ')' commandBlock { $$ = newNode("while"); addChild($$, $3); if ($5 != NULL) addChild($$, $5); }
        ;
-       
+
+/* TODO: CABEÇA DA DECLARAÇÃO PRECISA SER A ULTIMA*/
 varDeclaration: type idList { $$ = $2; }
 
 /* It is possible to declare multiple variables at a time */ 
@@ -103,21 +101,29 @@ idList: id            { $$ = $1; }
       ;
 
 /* A variable can be optionaly initialized if followed by TK_OC_LE '<=' and a literal */
-id: TK_IDENTIFICADOR                  { $$ = NULL; freeLexValue($1);}
-  | TK_IDENTIFICADOR TK_OC_LE literal { $$ = newNode("<="); addChild($$, newNode($1.value)); addChild($$, newNode($3.value)); freeLexValue($1);}
+id: identifier                  { $$ = NULL; }
+  | identifier TK_OC_LE literal { $$ = newNode("<="); addChild($$, $1); addChild($$, $3); }
   ;
 
 /* The selection command IF is followed by an optional ELSE */
 selectionCommand: TK_PR_IF '(' expression ')' commandBlock TK_PR_ELSE commandBlock
-                     { $$ = newNode("if"); addChild($$, $3); if ($5 != NULL) addChild($$, $5); newNode("else"); if ($7 != NULL) addChild($$, $7); }
+                     { $$ = newNode("if");
+                       addChild($$, $3);
+                       if ($5 != NULL) addChild($$, $5);
+                       newNode("else");
+                       if ($7 != NULL) addChild($$, $7);
+                     }
                 | TK_PR_IF '(' expression ')' commandBlock
-                     { $$ = newNode("if"); addChild($$, $3); if ($5 != NULL) addChild($$, $5); }
+                     { $$ = newNode("if");
+                       addChild($$, $3); 
+                       if ($5 != NULL) addChild($$, $5); 
+                     }
                 ;
 
-functionCall: TK_IDENTIFICADOR '(' argumentsList ')' { $$ = newNode(functionCallLabel($1.value)); addChild($$, $3); freeLexValue($1); }
+functionCall: TK_IDENTIFICADOR '(' argumentsList ')' { $$ = newNode(functionCallLabel($1->value)); addChild($$, $3); }
             ;
 
-argumentsList: argumentsList ',' expression { $$ = $1; addChild($1, $3); }
+argumentsList: expression ',' argumentsList { $$ = $1; addChild($1, $3); }
             | expression                    { $$ = $1; }
             ;
 
@@ -158,14 +164,16 @@ factor: '!' operand { $$ = newNode("!"); addChild($$, $2); }
       ;
 
 operand: '(' expression ')' { $$ = $2; }
-       | TK_IDENTIFICADOR   { $$ = newNode($1.value); freeLexValue($1); }
+       | identifier         { $$ = $1; }
        | functionCall       { $$ = $1; }
-       | literal            { $$ = newNode($1.value); freeLexValue($1); }
+       | literal            { $$ = $1; }
        ;
 
-literal: TK_LIT_INT   { $$ = $1; }
-       | TK_LIT_FLOAT { $$ = $1; }
-       ; 
+literal: TK_LIT_INT   { $$ = newNode($1->value); freeLexValue($1); }
+       | TK_LIT_FLOAT { $$ = newNode($1->value); freeLexValue($1); }
+       ;
+
+identifier: TK_IDENTIFICADOR { $$ = newNode($1->value); freeLexValue($1); };
 
 type: TK_PR_INT
     | TK_PR_FLOAT
