@@ -90,14 +90,12 @@ varDeclaration: type idList { $$ = $2; }
 
 /* It is possible to declare multiple variables at a time */ 
 idList: id            { $$ = $1; }
-      | id ',' idList { 
-              if ($1 != NULL) {
-                     $$ = $1;
-                     if ($3 != NULL) {
-                            addChild($$, $3);
-                     }
-              } else {
-                     $$ = $3; } }
+      | id ',' idList 
+      { 
+              $$ = $1;
+              if ($$ != NULL) { if ($3 != NULL) addChild($$, $3); }
+              else $$ = $3; 
+       }
       ;
 
 /* A variable can be optionaly initialized if followed by TK_OC_LE '<=' and a literal */
