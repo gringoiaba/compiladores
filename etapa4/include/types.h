@@ -8,7 +8,8 @@ typedef enum lexType {
 
 typedef enum type {
     INT,
-    FLOAT
+    FLOAT,
+    UNDEFINED
 } Type;
 
 Type typeInfer(Type type1, Type type2);
