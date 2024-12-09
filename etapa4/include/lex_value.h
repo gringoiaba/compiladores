@@ -1,10 +1,7 @@
 #ifndef LEX_VALUE_H
 #define LEX_VALUE_H
 
-typedef enum lexType {
-    LITERAL,
-    IDENTIFIER
-} LexType;
+#include "types.h"
 
 typedef struct lexValue {
     int lineno;
