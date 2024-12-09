@@ -15,7 +15,6 @@ Node *newNode(const char *label)
         t->label = strdup(label);
         t->numChildren = 0;
         t->children = NULL;
-        t->lastChild = NULL;
     }
     return t;
 }
@@ -31,18 +30,19 @@ void addChild(Node *parent, Node *child)
     }
 }
 
-Node *getLastNode(Node *root, int minChildren)
+Node *getLastNode(Node *root)
 {
-    if (root != NULL) {
-        int n = root->numChildren;
-        while(root->children[n-1] != NULL && n > minChildren) {
-            root = root->children[n-1];
-            n = root->numChildren;
+    Node *node = root;
+    if (node != NULL) {
+        int n = node->numChildren;
+        while(node->children[n-1] != NULL && n > 2) {
+            node = node->children[n-1];
+            n = node->numChildren;
         }
-    return root;
+    return node;
     }
     else{
-        printf("Erro: %s recebeu parâmetro tree = %p.\n", __FUNCTION__, root);
+        printf("Error: %s received as param tree = %p.\n", __FUNCTION__, root);
     }
 }
 
