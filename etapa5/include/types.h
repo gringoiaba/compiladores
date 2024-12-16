@@ -9,6 +9,7 @@ typedef enum lexType {
 typedef enum type {
     INT,
     FLOAT,
+    /* Used as temporary placeholder of declared variable */
     UNDEFINED
 } Type;
 
