@@ -18,7 +18,7 @@
 %code requires { 
     #include "ast.h" 
     #include "lex_value.h" 
-    #include "table.h"
+    #include "symbolTable.h"
     #include "stack.h"
     #include "errors.h"
 }
@@ -58,66 +58,76 @@
 start: createGlobalScope program closeGlobalScope
 
 createGlobalScope:
-{
-       Table *table = newTable();
-       stack = newStack(table);
-}
+       {
+              SymbolTable *symbolTable = newSymbolTable();
+              stack = newStack(symbolTable);
+       }
 
 closeGlobalScope:
-{
-       freeStack(stack);
-}
+       {
+              freeStack(stack);
+       }
 
 /* A program is composed of an optional list of functions*/
-program: functionList { $$ = $1; arvore = $$; printNodeGraphviz((Node *) arvore);}
+program: functionList { $$ = $1; arvore = $$; /*printNodeGraphviz((Node *) arvore);*/}
        | /* empty */  { $$ = NULL; arvore = $$; }
        ;
 
-functionList: function pop functionList { $$ = $1;  addChild($1, $3); }
-            | function pop              { $$ = $1; }
+functionList: function popScope functionList 
+       { 
+              $$ = $1;  
+              addChild($1, $3);
+              concatCode($1->code, $3->code);
+       }
+            | function popScope              { $$ = $1; }
             ;
 
-function: functionID '=' push nonEmptyParamList '>' type functionCommandBlock 
+function: functionID '=' pushScope nonEmptyParamList '>' type functionCommandBlock 
        { 
               $$ = $1;
-              if ($7 != NULL) addChild($$, $7);
-              Entry *entry = newEntry(get_line_number(), FUNCTION, $6->type, $1->label); 
-              insertEntry(stack->next->table, entry); 
+              if ($7 != NULL) {
+                     addChild($$, $7);
+                     // $$->code = $7->code;
+              }
+              Symbol *symbol = newSymbol(get_line_number(), FUNCTION, $6->type, $1->label); 
+              insertSymbol(stack->prev->symbolTable, symbol);
        }
-        | functionID '=' push '>' type functionCommandBlock
+        | functionID '=' pushScope '>' type functionCommandBlock
        { 
               $$ = $1;
-              if ($6 != NULL) addChild($$, $6);
-              Entry *entry = newEntry(get_line_number(), FUNCTION, $5->type, $1->label);
-              insertEntry(stack->next->table, entry); 
-       }
-        ;
+              if ($6 != NULL) {
+                     addChild($$, $6);
+                     // $$->code = $6->code;
+              }
+              Symbol *symbol = newSymbol(get_line_number(), FUNCTION, $5->type, $1->label);
+              insertSymbol(stack->prev->symbolTable, symbol); 
+       };
 
 nonEmptyParamList: functionID '<' '-' type                            
        { 
               $$ = NULL;
-              Entry *entry = newEntry(get_line_number(), VARIABLE, $4->type, $1->label); 
-              insertEntry(stack->table, entry);
+              Symbol *symbol = newSymbol(get_line_number(), VARIABLE, $4->type, $1->label); 
+              insertSymbol(stack->symbolTable, symbol);
        }
                  | functionID '<' '-' type TK_OC_OR nonEmptyParamList
        { 
               $$ = NULL;
-              Entry *entry = newEntry(get_line_number(), VARIABLE, $4->type, $1->label);
-              insertEntry(stack->table, entry);
+              Symbol *symbol = newSymbol(get_line_number(), VARIABLE, $4->type, $1->label);
+              insertSymbol(stack->symbolTable, symbol);
        }
                  ;
 
 functionID: TK_IDENTIFICADOR 
-{ 
-       $$ = newNode($1->value);
-       freeLexValue($1); 
-};
+       { 
+              $$ = newNode($1->value);
+              freeLexValue($1); 
+       };
 
-functionCommandBlock: '{' commandList '}'     { $$ = $2; }
-                    | '{' '}'                 { $$ = NULL; }
+functionCommandBlock: '{' commandList { printStack(stack);} '}'     { $$ = $2; }
+                    | '{' { printStack(stack); }'}'                 { $$ = NULL; }
                     ;
 
-commandBlock: '{' push commandList  pop'}' { $$ = $3; }
+commandBlock: '{' pushScope commandList popScope'}' { $$ = $3; }
             | '{' '}'                      { $$ = NULL; }
             ;
 
@@ -126,7 +136,10 @@ commandList: command ';'                   { $$ = $1; }
        { 
               $$ = $1;
               if ($$ != NULL) { 
-                     if ($3 != NULL) addChild($$, $3);
+                     if ($3 != NULL) {
+                            addChild($$, $3);
+                            // concatCode($$->code, $3->code);
+                     }
               }
               else $$ = $3;
        }
@@ -134,8 +147,16 @@ commandList: command ';'                   { $$ = $1; }
            | varDeclaration ';' commandList 
        {
               $$ = $1;
-              if ($$ != NULL) { /* TODO: LAST CHILD*/
-                     if ($3 != NULL) addChild(getLastNode($$), $3);
+              if ($$ != NULL) {
+                     if ($3 != NULL) {
+                            Node *lastNode = getLastNode($$);
+                            addChild(lastNode, $3);
+                            // if (lastNode->code != NULL) {
+                            //        concatCode(lastNode->code, $3->code);
+                            // } else { 
+                            //        $$->code = $3->code;
+                            // }    
+                     }
               }
               else $$ = $3;
        };
@@ -151,7 +172,7 @@ command: commandBlock                                { $$ = $1; }
 varDeclaration: type idList 
 { 
        $$ = $2;
-       setUndefinedType(stack->table, $1->type);
+       setUndefinedType(stack->symbolTable, $1->type);
 }
 
 /* It is possible to declare multiple variables at a time */ 
@@ -169,14 +190,14 @@ idList: id            { $$ = $1; }
 /* A variable can be optionaly initialized if followed by TK_OC_LE '<=' and a literal */
 id: identifier                  
 { 
-       Entry *entry = newEntry(get_line_number(), VARIABLE, UNDEFINED, $1->label);
-       insertEntry(stack->table, entry);
+       Symbol *symbol = newSymbol(get_line_number(), VARIABLE, UNDEFINED, $1->label);
+       insertSymbol(stack->symbolTable, symbol);
        $$ = NULL;
 }
   | identifier TK_OC_LE literal 
 {
-       Entry *entry = newEntry(get_line_number(), VARIABLE, UNDEFINED, $1->label);
-       insertEntry(stack->table, entry);
+       Symbol *symbol = newSymbol(get_line_number(), VARIABLE, UNDEFINED, $1->label);
+       insertSymbol(stack->symbolTable, symbol);
        $$ = newNode("<=");
        addChild($$, $1);
        addChild($$, $3); 
@@ -212,7 +233,11 @@ assignmentCommand: identifier '=' expression
        $$ = newNode("="); 
        addChild($$, $1); 
        addChild($$, $3);
-       $$->type = searchEntryInStack(stack, $1->label)->type; 
+       $$->type = searchSymbolInStack(stack, $1->label)->type; 
+
+       // $$->code = $3->code;
+       // char *temp = newTemp();
+       // appendTac($$->code, newTac("loadI", temp, NULL));
 }
                  ;
 
@@ -264,8 +289,10 @@ operand: '(' expression ')' { $$ = $2; }
               checkDeclaration(stack, $1->value, get_line_number());
               checkNature(stack, $1->value, VARIABLE, get_line_number());
               $$ = newNode($1->value);
-              $$->type = searchEntryInStack(stack, $1->value)->type; 
+              $$->type = searchSymbolInStack(stack, $1->value)->type; 
               freeLexValue($1);
+
+
        }
        ;
 
@@ -292,13 +319,14 @@ type: TK_PR_INT   { $$ = newNode("int"); $$->type = INT; }
     | TK_PR_FLOAT { $$ = newNode("float"); $$->type = FLOAT; }
     ;
 
-push: 
+pushScope: 
 { 
-       Table *table = newTable();  
-       pushTable(&stack, table);
+       SymbolTable *symbolTable = newSymbolTable();
+       symbolTable->offset = stack->symbolTable->size;
+       pushTable(&stack, symbolTable);
 };
 
-pop: 
+popScope: 
 { 
        popTable(&stack); 
 };
