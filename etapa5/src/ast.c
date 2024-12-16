@@ -9,41 +9,49 @@
 
 Node *newNode(const char *label) 
 {
-    Node *t = NULL;
-    t = calloc(1, sizeof(Node));
-    if (t != NULL) {
-        t->label = strdup(label);
-        t->numChildren = 0;
-        t->children = NULL;
+    Node *node = calloc(1, sizeof(Node));
+    if (node == NULL) {
+        fprintf(stderr, "Error: %s couldn't allocate memory.\n", __FUNCTION__);
+        return NULL;
     }
-    return t;
+    node->label = strdup(label);
+    node->children = NULL;
+    node->numChildren = 0;
+    
+    node->temp = NULL;
+    node->code = NULL;
+
+    return node;
 }
 
 void addChild(Node *parent, Node *child) 
 {
-    if (parent != NULL && child != NULL) {
+    if (parent == NULL) {
+        fprintf(stderr, "Error: %s tried to add child to null parent %p.\n", __FUNCTION__, parent);
+        return;
+    }
+    if (child != NULL) {
         parent->numChildren++;
-        parent->children = realloc(parent->children, parent->numChildren * sizeof(Node*));
+        parent->children = realloc(parent->children, parent->numChildren * sizeof(Node *));
         parent->children[parent->numChildren-1] = child;
-    } else {
-        fprintf(stderr, "Error: %s received as param tree = %p / %p.\n", __FUNCTION__, parent, child);
     }
 }
 
 Node *getLastNode(Node *root)
 {
     Node *node = root;
-    if (node != NULL) {
-        int n = node->numChildren;
-        while(node->children[n-1] != NULL && n > 2) {
-            node = node->children[n-1];
-            n = node->numChildren;
-        }
+    if (node == NULL) {
+        fprintf(stderr, "Error: %s received as param tree = %p.\n", __FUNCTION__, root);
+        return NULL;
+    } 
+    
+    int n = node->numChildren;
+    while(node->children[n-1] != NULL && n > 2) {
+        node = node->children[n-1];
+        n = node->numChildren;
+    }
     return node;
-    }
-    else{
-        printf("Error: %s received as param tree = %p.\n", __FUNCTION__, root);
-    }
+
 }
 
 void freeNode(Node *root) 
