@@ -1,18 +1,31 @@
-#ifndef STACK_H
-#define STACK_H
+#ifndef TABLE_STACK_H
+#define TABLE_STACK_H
 
-#include "table.h"
+#include "symbolTable.h"
 #include "types.h"
 
+/* The stack consists of a table and a pointer to the previous stack */
 typedef struct stack {
-    Table *table;
-    struct stack *next;
+    SymbolTable *symbolTable;
+    struct stack *prev;
 } TableStack;
 
-TableStack *newStack(Table *table);
-void pushTable(TableStack **stack, Table *table);
+/* Inserts a symbol table to a new stack */
+TableStack *newStack(SymbolTable *symbolTable);
+
+/* Pushes a symbol table in a given stack  */
+void pushTable(TableStack **stack, SymbolTable *symbolTable);
+
+/* Pops a symbol table from a stack */
 void popTable(TableStack **stack);
-Entry *searchEntryInStack(TableStack *stack, char *value);
+
+/* Searches for a symbol in the hole stack, even in lower hierchical symbol tables */
+Symbol *searchSymbolInStack(TableStack *stack, char *value);
+
+/* Free allocated stack memory */
 void freeStack(TableStack *stack);
 
-#endif // STACK_H
+/* Prints the stack */
+void printStack(TableStack *stack);
+
+#endif // TABLE_STACK_H

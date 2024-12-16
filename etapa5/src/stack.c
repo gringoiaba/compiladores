@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include "stack.h"
 
-TableStack *newStack(Table *table)
+TableStack *newStack(SymbolTable *symbolTable)
 {
     TableStack *stack = NULL;
     stack = (TableStack *)malloc(sizeof(TableStack));
@@ -11,21 +11,21 @@ TableStack *newStack(Table *table)
         fprintf(stderr, "Error: %s could not allocate memory for stack.\n", __FUNCTION__);
         exit(1);
     }
-    stack->table = table;
-    stack->next = NULL;
+    stack->symbolTable = symbolTable;
+    stack->prev = NULL;
     return stack;
 }
 
-void pushTable(TableStack **stack, Table *table)
+void pushTable(TableStack **stack, SymbolTable *symbolTable)
 {
     if (*stack == NULL || stack == NULL) {
         fprintf(stderr, "Error: %s received as param stack %p.\n", __FUNCTION__, stack);
         exit(1);
     }
 
-    TableStack *new = newStack(table);
-    new->table = table;
-    new->next = *stack;
+    TableStack *new = newStack(symbolTable);
+    new->symbolTable = symbolTable;
+    new->prev = *stack;
     *stack = new;
 }
 
@@ -37,20 +37,20 @@ void popTable(TableStack **stack)
     }
 
     TableStack *temp = *stack;
-    *stack = (*stack)->next;
-    freeTable(temp->table);
+    *stack = (*stack)->prev;
+    freeSymbolTable(temp->symbolTable);
     free(temp);
 }
 
-Entry *searchEntryInStack(TableStack *stack, char *value)
+Symbol *searchSymbolInStack(TableStack *stack, char *value)
 {
     if (stack == NULL) return NULL;
 
     TableStack *temp = stack;
     while (temp != NULL) {
-        Entry *entry = searchEntry(temp->table, value);
-        if (entry != NULL) return entry;
-        temp = temp->next;
+        Symbol *symbol = searchSymbol(temp->symbolTable, value);
+        if (symbol != NULL) return symbol;
+        temp = temp->prev;
     }
     return NULL;
 }
@@ -62,8 +62,26 @@ void freeStack(TableStack *stack)
     TableStack *temp = NULL;
     while (stack != NULL) {
         temp = stack;
-        stack = stack->next;
-        if (temp->table != NULL) freeTable(temp->table);
+        stack = stack->prev;
+        if (temp->symbolTable != NULL) freeSymbolTable(temp->symbolTable);
         free(temp);
     }
+}
+
+void printStack(TableStack *stack)
+{
+    if (stack == NULL || stack->symbolTable == NULL) {
+        printf("Stack is empty\n");
+        return;
+    }
+    fprintf(stdout, " +----------------------+--------+------------+--------+ \n");
+    fprintf(stdout, " | %-20s | %-6s | %-10s | %-6s | \n", "symbol", "line", "nature", "type");
+
+    while (stack) {        
+        printf(" +----------------------+--------+------------+--------+ \n");
+
+        printSymbolTable(stack->symbolTable);
+        stack = stack->prev;
+    }
+    printf(" +----------------------+--------+------------+--------+ \n"); 
 }
