@@ -3,6 +3,7 @@
        #include <string.h>
        #include "stack.h"
        #include "ast.h"
+
        int yylex(void);
        void yyerror (char const *mensagem);
        int get_line_number();
@@ -14,6 +15,7 @@
        Node *binOp(char *op, Node *left, Node *right);
        Node *unOp(char *op, Node *operand);
        void genBinOpCode(Node *head, Node *op1, Node *op2, OpCode opCode);
+       void check(TableStack *stack, char *label, Nature nature, int line);
 %}
 
 %code requires { 
@@ -83,11 +85,12 @@ program: functionList
               //        $$->code = code;
               // }
               
+              // Is this really necessary?
               Code *code = newCode();
               appendInstruction(code, newBinOpInstruction(LOADI, "0", "rfp"));
               concatCode(code, $$->code);
               $$->code = code;
-              printCode($$->code); /*printNodeGraphviz((Node *) arvore);*/}
+              /* printCode($$->code); printNodeGraphviz((Node *) arvore);*/}
        | /* empty */  { $$ = NULL; arvore = $$; }
        ;
 
@@ -250,7 +253,9 @@ id: identifier
        $$->code = newCode();
        $$->temp = $3->temp;
        char *offsetStr = getOffsetStr(symbol);
-       IlocInstruction *store = newTriOpInstruction(STOREAI, $3->label, "rfp", offsetStr);
+       IlocInstruction *load = newBinOpInstruction(LOADI, $3->label, $$->temp);
+       IlocInstruction *store = newTriOpInstruction(STOREAI, $$->temp, "rfp", offsetStr);
+       appendInstruction($$->code, load);
        appendInstruction($$->code, store);
 };
 
@@ -295,8 +300,7 @@ selectionCommand: TK_PR_IF '(' expression ')' commandBlock TK_PR_ELSE commandBlo
 
 functionCall: identifier '(' argumentsList ')' 
 { 
-       checkDeclaration(stack, $1->label, get_line_number());
-       checkNature(stack, $1->label, FUNCTION, get_line_number());
+       check(stack, $1->label, FUNCTION, get_line_number());
        $$ = newNode(functionCallLabel($1->label));
        addChild($$, $3); 
        $$->code = newCode();
@@ -304,8 +308,7 @@ functionCall: identifier '(' argumentsList ')'
 
 assignmentCommand: identifier '=' expression 
 {      
-       checkDeclaration(stack, $1->label, get_line_number());
-       checkNature(stack, $1->label, VARIABLE, get_line_number());
+       check(stack, $1->label, VARIABLE, get_line_number());
        $$ = newNode("="); 
        addChild($$, $1); 
        addChild($$, $3);
@@ -438,8 +441,7 @@ operand: '(' expression ')' { $$ = $2; }
        | literal            { $$ = $1; }
        | TK_IDENTIFICADOR   
        { 
-              checkDeclaration(stack, $1->value, get_line_number());
-              checkNature(stack, $1->value, VARIABLE, get_line_number());
+              check(stack, $1->value, VARIABLE, get_line_number());
               $$ = newNode($1->value);
               $$->type = searchSymbolInStack(stack, $1->value)->type; 
 
@@ -537,4 +539,10 @@ void genBinOpCode(Node *head, Node *op1, Node *op2, OpCode opCode)
        concatCode(head->code, op2->code);
        IlocInstruction *op = newTriOpInstruction(opCode, op1->temp, op2->temp, head->temp);
        appendInstruction(head->code, op);
+}
+
+void check(TableStack *stack, char *label, Nature nature, int line)
+{
+       checkDeclaration(stack, label, line);
+       checkNature(stack, label, nature, line);
 }
