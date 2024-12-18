@@ -116,11 +116,21 @@ void printSymbolTable(SymbolTable *symbolTable) {
 
     Symbol *temp = symbolTable->head;
     while (temp) {
-        fprintf(stdout," | %-20s | %-6d | %-10s | %-6s |\n",
+        fprintf(stdout," | %-4d | %-20s | %-6d | %-10s | %-6s |\n",
+               temp->offset,
                temp->value,
                temp->lineno,
                temp->nature == VARIABLE ? "VARIABLE" : "FUNCTION",
                temp->type == INT ? "INT" : "FLOAT");
         temp = temp->next;
     }
+}
+
+char *getOffsetStr(Symbol *symbol)
+{
+    char *offsetStr = calloc(1, 10);
+    sprintf(offsetStr, "%d", symbol->offset);
+    //printf("offsetStr: %d\n", symbol->offset);
+    return offsetStr;
+
 }

@@ -52,4 +52,6 @@ Symbol *newSymbol(int lineno, Nature nature, Type type, char *value);
 /* Frees allocated symbol */
 void freeSymbol(Symbol *symbol);
 
+char *getOffsetStr(Symbol *symbol);
+
 #endif // SYMBOL_TABLE_H
