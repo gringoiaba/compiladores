@@ -90,7 +90,7 @@ program: functionList
               appendInstruction(code, newBinOpInstruction(LOADI, "0", "rfp"));
               concatCode(code, $$->code);
               $$->code = code;
-              /* printCode($$->code); printNodeGraphviz((Node *) arvore);*/}
+              printCode($$->code); /*printNodeGraphviz((Node *) arvore);*/}
        | /* empty */  { $$ = NULL; arvore = $$; }
        ;
 
