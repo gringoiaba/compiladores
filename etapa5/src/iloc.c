@@ -7,7 +7,7 @@ int tempCounter = 0;
 int labelCounter = 0;
 
 
-IlocInstruction *newUnOpInstruction(OpCode opCode, char *target, Arrow arrow)
+IlocInstruction *newUnOpInstruction(OpCode opCode, char *target)
 {
     IlocInstruction *instruction = malloc(sizeof(IlocInstruction));
     if (instruction == NULL) {
@@ -20,14 +20,13 @@ IlocInstruction *newUnOpInstruction(OpCode opCode, char *target, Arrow arrow)
     instruction->arg1 = NULL;
     instruction->arg2 = NULL;
     instruction->arg3 = target;
-    instruction->arrow = arrow;
     instruction->numArgs = 1;
     instruction->next = NULL;
     
     return instruction;
 }
 
-IlocInstruction *newBinOpInstruction(OpCode opCode, char *arg1, char *target, Arrow arrow)
+IlocInstruction *newBinOpInstruction(OpCode opCode, char *arg1, char *target)
 {
     IlocInstruction *instruction = malloc(sizeof(IlocInstruction));
     if (instruction == NULL) {
@@ -40,14 +39,13 @@ IlocInstruction *newBinOpInstruction(OpCode opCode, char *arg1, char *target, Ar
     instruction->arg1 = arg1;
     instruction->arg2 = NULL;
     instruction->arg3 = target;
-    instruction->arrow = arrow;
     instruction->numArgs = 2;
     instruction->next = NULL;
     
     return instruction;
 }
 
-IlocInstruction *newTriOpInstruction(OpCode *opCode, char *arg1, char *arg2, char *target, Arrow arrow)
+IlocInstruction *newTriOpInstruction(OpCode opCode, char *arg1, char *arg2, char *target)
 {
     IlocInstruction *instruction = malloc(sizeof(IlocInstruction));
     if (instruction == NULL) {
@@ -60,7 +58,6 @@ IlocInstruction *newTriOpInstruction(OpCode *opCode, char *arg1, char *arg2, cha
     instruction->arg1 = arg1;
     instruction->arg2 = arg2;
     instruction->arg3 = target;
-    instruction->arrow = arrow;
     instruction->numArgs = 3;
     instruction->next = NULL;
     
@@ -87,10 +84,60 @@ IlocInstruction *newLabelInstruction(char *label)
 }
 
 // TODO freeInstruction
-void freeInstruction(IlocInstruction *instruction);
+void freeInstruction(IlocInstruction *instruction)
+{
+    return;
+}
 
 // TODO printInstruction
-void printInstruction(IlocInstruction *instruction);
+void printInstruction(IlocInstruction *instruction)
+{
+    if (instruction->label != NULL) {
+        printf("%s:\n", instruction->label);
+    }
+
+    OpCode op = instruction->opCode;
+    char arrow[3];
+
+    if (op >= JUMP) {
+        strcpy(arrow, "->");
+    } else { 
+        strcpy(arrow, "=>");
+    }
+
+    if (op == NOP) {
+        // fprintf(stdout, "nop\n");
+    }
+    else if (op == STOREAI || op == CBR) {
+        fprintf(stdout, "%s %s %s %s, %s\n", 
+            opCodeToString(op),
+            instruction->arg1,
+            arrow, 
+            instruction->arg2, 
+            instruction->arg3);
+    } 
+    else if (instruction->numArgs == 1) {
+        fprintf(stdout, "%s %s %s\n", 
+            opCodeToString(op),
+            arrow,
+            instruction->arg3);
+    }
+    else if (instruction->numArgs == 2) {
+        fprintf(stdout, "%s %s %s %s\n", 
+            opCodeToString(op),
+            instruction->arg1,
+            arrow,
+            instruction->arg3);
+    }
+    else {
+        fprintf(stdout, "%s %s, %s %s %s\n", 
+            opCodeToString(op),
+            instruction->arg1,
+            instruction->arg2,
+            arrow,
+            instruction->arg3);
+    }
+}
 
 Code *newCode()
 {
@@ -104,7 +151,7 @@ Code *newCode()
     code->tail = NULL;
 }
 
-void *concatCode(Code *code1, Code *code2)
+void concatCode(Code *code1, Code *code2)
 {
     /* The final code is in code1
      * if code1 is NULL, then assigns code2 to code1
@@ -112,18 +159,26 @@ void *concatCode(Code *code1, Code *code2)
      * if neither is NULL, concatenates both
      */
     if (code1 == NULL) {
-        if (code2 == NULL) return;
+        if (code2 == NULL) {
+            code1 = newCode(); 
+            return;
+        }
         code1->head = code2->head;
         code1->tail = code2->tail;
     } 
     else {
         if (code2 == NULL) return;
+        if (code1->tail == NULL) {
+            code1->head = code2->head;
+            code1->tail = code2->tail;
+            return;
+        }
         code1->tail->next = code2->head;
         code1->tail = code2->tail;
     }
 }
 
-void *appendInstruction(Code *code, IlocInstruction *instruction)
+void appendInstruction(Code *code, IlocInstruction *instruction)
 {
     if (code == NULL || instruction == NULL) return;
 
@@ -154,25 +209,114 @@ void printCode(Code *code)
 
 char *newTemp()
 {
-    return newString('t', &tempCounter);
+    return newString('r', &tempCounter);
 }
 
 char *newLabel()
 {
-    return newString('l', &labelCounter);
+    return newString('L', &labelCounter);
 }
 
 char *newString(char c, int *counter)
 {
-    int size = snprintf(NULL, 0, "%c%d", c, *counter);
-    char *string = NULL;
-    string = (char *)malloc(size + 1);
+    int size = snprintf(NULL, 0, "%c%d", c, *counter) + 1;
+    char *string = (char *)malloc(size);
 
     if (string == NULL) {
         fprintf(stderr, "Memory allocation error\n");
-        exit(1);
+        return NULL;
     }
 
-    sprintf(string, size, "%c%d", c, (*counter)++);
+    snprintf(string, size, "%c%d", c, (*counter)++);
     return string;
+}
+
+char *opCodeToString(OpCode opCode)
+{
+    switch (opCode)
+    {
+    case NOP:
+        return "nop";
+        break;
+    case ADD:
+        return "add";
+        break;
+    case SUB:
+        return "sub";
+        break;
+    case MULT:
+        return "mult";
+        break;
+    case DIV:
+        return "div";
+        break;
+    case ADDI:
+        return "addI";
+        break;
+    case SUBI:  
+        return "subI";
+        break;
+    case RSUBI:
+        return "rsubI";
+        break;
+    case MULTI:
+        return "multI";
+        break;
+    case DIVI:
+        return "divI";
+        break;
+    case RDIVI:
+        return "rdivI";
+        break;
+    case AND:
+        return "and";
+        break;
+    case OR:
+        return "or";
+        break;
+    case LOADI: 
+        return "loadI";
+        break;
+    case LOAD:
+        return "load";
+        break;
+    case LOADAI:
+        return "loadAI";
+        break;
+    case STORE:
+        return "store";
+        break;
+    case STOREAI:
+        return "storeAI";
+        break;
+    case JUMPI:
+        return "jumpI";
+        break;
+    case JUMP:
+        return "jump";
+        break;
+    case CBR:
+        return "cbr";
+        break;
+    case CMP_LT:    
+        return "cmp_LT";
+        break;
+    case CMP_LE:
+        return "cmp_LE";
+        break;
+    case CMP_EQ:
+        return "cmp_EQ";
+        break;
+    case CMP_GE:
+        return "cmp_GE";
+        break;
+    case CMP_GT:
+        return "cmp_GT";
+        break;
+    case CMP_NE:
+        return "cmp_NE";
+        break;
+    default:
+        break;
+    }
 }

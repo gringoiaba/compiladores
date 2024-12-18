@@ -74,14 +74,14 @@ void printStack(TableStack *stack)
         printf("Stack is empty\n");
         return;
     }
-    fprintf(stdout, " +----------------------+--------+------------+--------+ \n");
-    fprintf(stdout, " | %-20s | %-6s | %-10s | %-6s | \n", "symbol", "line", "nature", "type");
+    fprintf(stdout, " +------+----------------------+--------+------------+--------+ \n");
+    fprintf(stdout, " | %-4s | %-20s | %-6s | %-10s | %-6s | \n", "off", "symbol", "line", "nature", "type");
 
     while (stack) {        
-        printf(" +----------------------+--------+------------+--------+ \n");
+        printf(" +------+----------------------+--------+------------+--------+ \n");
 
         printSymbolTable(stack->symbolTable);
         stack = stack->prev;
     }
-    printf(" +----------------------+--------+------------+--------+ \n"); 
+    printf(" +------+----------------------+--------+------------+--------+ \n"); 
 }
