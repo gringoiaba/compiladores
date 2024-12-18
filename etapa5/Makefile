@@ -5,10 +5,10 @@ CC=gcc
 CFLAGS=-I$(IDIR)
 LFLAGS=-lfl
 
-_DEPS = parser.tab.h ast.h lex_value.h errors.h stack.h symbolTable.h types.h
+_DEPS = parser.tab.h ast.h lex_value.h errors.h stack.h symbolTable.h types.h iloc.h
 DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
 
-_OBJ = main.o lex.yy.o parser.tab.o ast.o lex_value.o errors.o stack.o symbolTable.o types.o
+_OBJ = main.o lex.yy.o parser.tab.o ast.o lex_value.o errors.o stack.o symbolTable.o types.o iloc.o
 OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
 etapa5: $(OBJ)
