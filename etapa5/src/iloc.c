@@ -109,7 +109,7 @@ void printInstruction(IlocInstruction *instruction)
         // fprintf(stdout, "nop\n");
     }
     else if (op == STOREAI || op == CBR) {
-        fprintf(stdout, "%s %s %s %s, %s\n", 
+        fprintf(stdout, "%-7s %s %s %s, %s\n", 
             opCodeToString(op),
             instruction->arg1,
             arrow, 
@@ -117,20 +117,20 @@ void printInstruction(IlocInstruction *instruction)
             instruction->arg3);
     } 
     else if (instruction->numArgs == 1) {
-        fprintf(stdout, "%s %s %s\n", 
+        fprintf(stdout, "%-7s %s %s\n", 
             opCodeToString(op),
             arrow,
             instruction->arg3);
     }
     else if (instruction->numArgs == 2) {
-        fprintf(stdout, "%s %s %s %s\n", 
+        fprintf(stdout, "%-7s %s %s %s\n", 
             opCodeToString(op),
             instruction->arg1,
             arrow,
             instruction->arg3);
     }
     else {
-        fprintf(stdout, "%s %s, %s %s %s\n", 
+        fprintf(stdout, "%-7s %s, %s %s %s\n", 
             opCodeToString(op),
             instruction->arg1,
             instruction->arg2,
